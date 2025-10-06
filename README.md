@@ -1,7 +1,11 @@
 #  Analysis and Modeling of the DeepSeek Gateway Architecture with Fallback Middleware  
 
-**Mariem Belhadj**  
-**Nessim Zemzem**  
+## 👨‍💻👩‍💻 Project Realized By
+
+| Student Name |  Class |
+|-------------------|----------|
+| **Mariem Belhadj** | 3 IDL 2 |
+| **Nessim Zemzem**  | 3 IDL 2 |
 
 ---
 
@@ -11,26 +15,46 @@
 
 ---
 
-## 1️⃣ Overview of the Gateway Architecture  
+## 1️⃣ Overview of DeepSeek’s Initial Microservices Architecture 
 
-### 🚪 API Gateway  
-- Acts as the **single entry point** for all client requests.  
-- Routes traffic to the appropriate microservices (Authentication, Users, Chat/Core AI).  
-- Hides internal complexities from clients.  
+The diagram illustrates **DeepSeek’s initial microservices architecture**, structured into several layers:
 
-### ⚖️ Load Balancers (Web & API)  
-- Distribute requests across multiple service instances for **scalability** and **availability**.  
-- **LB Web** handles front-end traffic.  
-- **LB API** manages backend communication.  
+### 🧑‍💻 Client Layer
+Contains **Web, Mobile, and API Clients** that send all requests through the API Gateway.
 
-### 🧩 Microservices Layer  
-- Each service (Authentication, Users, Chat/Core AI, Models, Inference, Training, Monitoring) runs **independently**.  
-- Ensures **modularity**, **fault isolation**, and **scalability**.  
+### 🚪 Gateway Layer
+The **API Gateway** acts as the **single entry point** for all incoming requests.  
+It routes traffic to the correct microservice (e.g., Authentication, User, Chat) while hiding internal complexity from clients.
 
-### 🗄️ Databases 
-- Every service has its **own database** (DB Auth, DB Users, DB Chat, DB Models, DB Training).  
-- **Redis Cache** optimizes response times.  
-- **Kafka Queue** ensures reliable asynchronous message passing.  
+### ⚖️ Load Balancing Layer
+Three dedicated load balancers ensure scalability and availability:
+- **LB Web** → handles front-end requests  
+- **LB API** → manages backend communications  
+- **LB Inference** → routes inference and AI workloads  
+
+### 🧩 Service Layer
+This layer includes independent, domain-specific services:
+- **Auth Service**
+- **User Service**
+- **Chat Service**
+- **Model Service**
+- **Inference Service**
+- **Training Service**
+- **Monitoring Service**
+- **Storage Service**
+- **Billing Service**
+
+Each service operates **independently**, promoting **modularity, fault isolation, and scalability**.
+
+### 🏗️ Infrastructure & Data Layers
+- **Infrastructure Components:**  
+  - `Redis Cache` → optimizes response times  
+  - `Kafka Queue` → manages asynchronous messaging  
+  - `Config Server` → centralizes configuration  
+
+- **Data Components:**  
+  Each microservice has its own dedicated database:  
+  - `DB Auth`, `DB User`, `DB Chat`, `DB Model`   
 
 ---
 
@@ -58,9 +82,10 @@ Although powerful, this design has weaknesses when fallback is handled only at t
 ---
 # 🔄 Upgrade to Parallel Microservices Architecture
 
-![Parallel Microservices Architecture](images/paralle-architecture.png)
+![Parallel Microservices Architecture](images/deepseek-paralle-architecture.png)
 
-In the new design, the **Upgrade Layer** is introduced between the **API Gateway** and the **Multi-Middleware Layer**. This layer enables smooth and zero-downtime upgrades of microservices.
+In this new design, the **Upgrade Layer** is introduced between the **API Gateway** and the **Multi-Middleware Layer**.  
+It enables **seamless, zero-downtime upgrades** of microservices and improves overall system resilience, scalability, and observability.
 
 ---
 
@@ -68,8 +93,6 @@ In the new design, the **Upgrade Layer** is introduced between the **API Gateway
 
 - **Upgrade Manager**  → Orchestrates rolling upgrades of microservices.
 - **Version Router**  → Routes requests to specific service versions (e.g., v1 vs v2) for canary releases or A/B testing.
-- **Blue-Green Deployment**  → Runs two identical environments in parallel (Blue = current, Green = new). Traffic can be switched gradually, minimizing downtime.
-
  ==> This ensures seamless migration from older services to new ones without service interruptions, supporting zero-downtime deployment.
 
 ---
@@ -83,7 +106,6 @@ The **Multi-Middleware Layer** provides resilience and observability across micr
 - **Logging/Tracing**  → Ensures observability across distributed services.
 - **Cache Middleware**  → Speeds up repeated queries.
 - **Validation Middleware**  → Checks request payloads before hitting services.
-- **Compression Middleware**  → Optimizes response sizes.
 - **Fallback Handler**  → Provides degraded but functional responses in case of failure.
 - **Circuit Breaker**  → Stops cascading failures.
 - **Retry Logic**  → Automatically retries failed calls.
@@ -108,10 +130,20 @@ Fallback must be carefully aligned with the multi-middleware workflow for optima
 
 ---
 
-## 🚀 Why This Solution is Optimal
+## 🚀 Why This Architecture is Optimal
 
-- **Zero-Downtime Upgrades**: Blue-Green + Version Router allow safe microservice migrations.  
-- **Layered Resilience**: Multi-middleware ensures defense in depth (rate limiting, caching, retries, circuit breaking, fallback).  
-- **Graceful Degradation**: Clients receive meaningful responses even under failures.  
-- **Performance Efficiency**: Cache-first fallback reduces latency during outages.  
-- **Observability & Recovery**: Logging, tracing, and DLQ enable fast debugging and replay of failed operations.
+- **✅ Zero-Downtime Upgrades** → Version Router and Blue-Green deployment enable seamless transitions.  
+- **✅ Layered Resilience** → Multi-Middleware ensures protection through rate limiting, caching, circuit breaking, and fallback.  
+- **✅ Parallel Service Versions** → Allow simultaneous old/new version coexistence for safer migrations.  
+- **✅ Graceful Degradation** → Clients continue receiving meaningful responses even during partial failures.  
+- **✅ Enhanced Observability** → Logging, tracing, and DLQ provide visibility and faster recovery.  
+- **✅ Scalable and Maintainable** → Each layer is modular, making the architecture easier to evolve and optimize.
+
+---
+
+### 🧩 Summary
+
+This **Parallel Microservices and Multi-Middleware Architecture** of DeepSeek represents a **resilient evolution** from the initial design.  
+It eliminates the single-point bottleneck at the gateway, distributes fallback and resilience mechanisms, and enables **continuous delivery** with **fault-tolerant parallel service execution**.
+
+---
