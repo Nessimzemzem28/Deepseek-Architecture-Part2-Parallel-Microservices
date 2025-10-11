@@ -6,6 +6,7 @@
 |-------------------|----------|
 | **Mariem Belhadj** | 3 IDL 2 |
 | **Nessim Zemzem**  | 3 IDL 2 |
+| **Ghassen Mastouri**  | 3 IDL 2 |
 
 ---
 
