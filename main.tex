@@ -1,8 +1,12 @@
 \documentclass[12pt]{article}
 \usepackage{tikz}
-\usetikzlibrary{shapes,arrows,chains,positioning,calc,fit,backgrounds}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds, shapes.symbols, decorations.pathmorphing, calc}
+\usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{float}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{xcolor}
 \usepackage[a4paper, margin=1.5cm]{geometry}
 
 \begin{document}
@@ -332,6 +336,155 @@
 \end{tikzpicture}
 \caption{Architecture Microservices Parallèle et Multi-Middleware de Deepseek}
 \label{fig:upgrade-architecture}
+\end{figure}
+
+\section{Architecture Microservices répartie parallèle de DeepSeek avec ajout de services intelligents de traitement d'images et videos}
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+    node distance=1cm and 1cm,
+    service/.style={rectangle, draw=blue!50, fill=blue!20, thick, minimum width=2.2cm, minimum height=0.7cm, text centered, rounded corners, font=\scriptsize},
+    ai-service/.style={rectangle, draw=purple!50, fill=purple!20, thick, minimum width=2.2cm, minimum height=0.7cm, text centered, rounded corners, font=\scriptsize},
+    media-service/.style={rectangle, draw=orange!50, fill=orange!20, thick, minimum width=2.2cm, minimum height=0.7cm, text centered, rounded corners, font=\scriptsize},
+    fallback-service/.style={rectangle, draw=red!50, fill=red!20, thick, minimum width=2cm, minimum height=0.6cm, text centered, rounded corners, font=\tiny},
+    database/.style={cylinder, draw=green!50, fill=green!20, thick, aspect=0.5, minimum height=0.8cm, minimum width=1cm, font=\tiny},
+    gateway/.style={rectangle, draw=red!50, fill=red!20, thick, minimum width=2.5cm, minimum height=0.8cm, rounded corners, font=\scriptsize},
+    loadbalancer/.style={rectangle, draw=teal!50, fill=teal!20, thick, minimum width=2.2cm, minimum height=0.7cm, rounded corners, font=\scriptsize},
+    cloud-service/.style={rectangle, draw=cyan!50, fill=cyan!20, thick, minimum width=2.5cm, minimum height=0.7cm, rounded corners, font=\scriptsize},
+    client/.style={rectangle, draw=gray!50, fill=gray!20, thick, minimum width=1.6cm, minimum height=0.6cm, rounded corners, font=\scriptsize},
+    layer/.style={rectangle, draw=black!40, dashed, thick, fill=black!5, rounded corners, inner sep=0.25cm},
+    arrow/.style={-Stealth, thick},
+    fallback-arrow/.style={-Stealth, thick, red, dashed},
+    parallel-arrow/.style={-Stealth, thick, blue!80}
+]
+
+% COUCHE CLIENT
+\node[client] (web) {Web};
+\node[client, right=0.8cm of web] (mobile) {Mobile};
+\node[client, right=0.8cm of mobile] (api) {API Externe};
+\node[client, right=0.8cm of api] (media) {Multimédia};
+
+\begin{scope}[on background layer]
+\node[layer, fit=(web)(mobile)(api)(media), label=above:{\scriptsize\textbf{Clients}}] (client-layer) {};
+\end{scope}
+
+% COUCHE GATEWAY ALIBABA CLOUD
+\node[gateway, below=1.5cm of mobile] (api-gateway) {\shortstack{Alibaba Cloud \\API Gateway}};
+\node[cloud-service, below=1.5cm of api] (cdn) {\shortstack{Alibaba Cloud \\CDN}};
+
+\begin{scope}[on background layer]
+\node[layer, fit=(api-gateway)(cdn), label=above:{\scriptsize\textbf{Entrée Répartie (Alibaba Cloud)}}] (gateway-layer) {};
+\end{scope}
+
+% COUCHE LOAD BALANCER & SERVICES ALIBABA CLOUD
+\node[loadbalancer, below=1.2cm of api-gateway, xshift=-1cm] (slb-app) {\shortstack{Alibaba Cloud \\SLB (App)}};
+\node[loadbalancer, right=2cm of slb-app] (slb-data) {\shortstack{Alibaba Cloud \\SLB (Data)}};
+
+\begin{scope}[on background layer]
+\node[layer, fit=(slb-app)(slb-data), label=above:{\scriptsize\textbf{Répartition de Charge (Alibaba Cloud)}}] (lb-layer) {};
+\end{scope}
+
+% SERVICES CORE PARALLELES (ECS/ACK)
+\node[service, below=1cm of slb-app, xshift=-2.5cm] (auth-v1) {Auth v1.0 (ECS)};
+\node[service, right=0.8cm of auth-v1] (user-v1) {User v1.0 (ECS)};
+\node[service, right=0.8cm of user-v1] (chat-v1) {Chat v1.0 (ECS)};
+
+\node[service, below=0.5cm of auth-v1] (auth-v2) {Auth v2.0 (ACK)};
+\node[service, right=0.8cm of auth-v2] (user-v2) {User v2.0 (ACK)};
+\node[service, right=0.8cm of user-v2] (chat-v2) {Chat v2.0 (ACK)};
+
+\begin{scope}[on background layer]
+\node[layer, fit=(auth-v1)(user-v1)(chat-v1)(auth-v2)(user-v2)(chat-v2), 
+      label=above:{\scriptsize\textbf{Microservices Core Parallèles (ECS/ACK)}}] (core-layer) {};
+\end{scope}
+
+% === Couche Intelligence & Médias (AI + Vision + Audio) ===
+
+% --- Services LLM (intelligence conversationnelle / raisonnement) ---
+\node[ai-service, below=1cm of core-layer, xshift=-2cm] (llm-deepseek-v3) {\shortstack{DeepSeek-V3 \\(PAI/GPU)}};
+\node[ai-service, right=0.8cm of llm-deepseek-v3] (llm-deepseek-r1) {\shortstack{DeepSeek-R1 \\(PAI/GPU)}};
+\node[ai-service, right=0.8cm of llm-deepseek-r1] (llm-qwen-bailian) {\shortstack{Qwen/Bailian \\(PAI/CPU)}};
+
+% --- Services Vision (analyse et génération d’images/vidéos) ---
+\node[media-service, below=0.6cm of llm-deepseek-v3] (yolo-detector) {\shortstack{Détection d’Images \\(YOLOv8 / GPU)}};
+\node[media-service, right=0.8cm of yolo-detector] (image-segmentation) {\shortstack{Segmentation \\(Content / Region Mask)}};
+\node[media-service, right=0.8cm of image-segmentation] (image-proc-ci) {\shortstack{Image Gen / Proc \\(Container Instance)}};
+\node[media-service, right=0.8cm of image-proc-ci] (video-trans-ci) {\shortstack{Video Gen / Trans. \\(Container Instance)}};
+
+% --- Service Audio (analyse et génération) ---
+\node[media-service, below=0.6cm of image-segmentation, xshift=0.8cm] (audio-service) {\shortstack{Audio I/O \\(Speech2Text / TTS)}}; 
+
+% --- Regroupement visuel de la couche ---
+\begin{scope}[on background layer]
+\node[layer, 
+      fit=(llm-deepseek-v3)(llm-deepseek-r1)(llm-qwen-bailian)
+           (yolo-detector)(image-segmentation)(image-proc-ci)(video-trans-ci)(audio-service),
+      label=above:{\scriptsize\textbf{Couche Intelligence Multimodale — Optimisation & Génération (PAI / GPU / Container Instance)}}] 
+      (ai-media-layer) {};
+\end{scope}
+
+
+% SERVICES FALLBACK
+\node[fallback-service, below=1cm of ai-media-layer, xshift=-1cm] (fallback-core) {\shortstack{Fallback \\Service Basique}};
+\node[fallback-service, right=0.8cm of fallback-core] (fallback-llm-cache) {\shortstack{Fallback \\Cache Sémantique}};
+\node[fallback-service, right=0.8cm of fallback-llm-cache] (fallback-media-basic) {\shortstack{Fallback \\Media Basique}};
+
+\begin{scope}[on background layer]
+\node[layer, fit=(fallback-core)(fallback-llm-cache)(fallback-media-basic), 
+      label=above:{\scriptsize\textbf{Services Fallback Répartis}}] (fallback-layer) {};
+\end{scope}
+
+% INFRASTRUCTURE REPARTIE ET BASES DE DONNÉES DISTRIBUÉES
+\node[database, below=1cm of fallback-layer, xshift=-3cm] (redis-cache) {\shortstack{Redis \\(ApsaraDB for Redis)}};
+\node[database, right=0.8cm of redis-cache] (tablestore) {\shortstack{TableStore \\(NoSQL Distribué)}};
+\node[database, right=0.8cm of tablestore] (oss-storage) {\shortstack{OSS \\(Stockage Objet)}};
+\node[database, right=0.8cm of oss-storage] (mq) {\shortstack{Message Queue \\(Alibaba MQ)}};
+\node[database, below=1cm of redis-cache] (polardb) {\shortstack{PolarDB \\(MySQL/PostgreSQL)}};
+\node[database, right=0.8cm of polardb] (analyticdb) {\shortstack{AnalyticDB \\(OLAP Distribué)}};
+
+
+\begin{scope}[on background layer]
+\node[layer, fit=(redis-cache)(tablestore)(oss-storage)(mq)(polardb)(analyticdb), 
+      label=above:{\scriptsize\textbf{Infrastructure & Bases de Données Distribuées (Alibaba Cloud)}}] (infra-layer) {};
+\end{scope}
+
+% CONNEXIONS
+\draw[arrow] (web) -- (api-gateway);
+\draw[arrow] (mobile) -- (api-gateway);
+\draw[arrow] (api) -- (api-gateway);
+\draw[arrow] (media) -- (cdn); 
+
+\draw[arrow] (api-gateway) -- (slb-app);
+\draw[arrow] (cdn) -- (image-proc-ci); 
+
+\draw[parallel-arrow] ([yshift=5pt]slb-app.west) -| (auth-v1.north);
+\draw[parallel-arrow] ([yshift=5pt]slb-app.west) -| (auth-v2.north);
+\draw[parallel-arrow] ([yshift=5pt]slb-app) -| (llm-deepseek-v3); 
+
+\draw[arrow, dashed] (auth-v1) -- (user-v1);
+\draw[arrow, dashed] (user-v1) -- (chat-v1);
+
+
+% % Fallback vers des services spécifiques ou moins coûteux
+\draw[fallback-arrow] (llm-deepseek-v3) to[bend right=20] (llm-qwen-bailian); % Fallback LLM cher vers moins cher
+\draw[fallback-arrow] (llm-deepseek-v3) to[bend right=30] (fallback-llm-cache); % Fallback vers cache sémantique
+\draw[fallback-arrow] (image-proc-ci) to (fallback-media-basic); % Fallback traitement image
+\draw[fallback-arrow] (auth-v1) to (fallback-core);
+
+% % Connexions vers l'infrastructure et BD
+\draw[arrow] (llm-deepseek-v3) -- (tablestore); % Peut utiliser Tablestore pour données vectorielles ou logs
+\draw[arrow] (image-proc-ci) -- (oss-storage); % Stockage d'images / vidéos
+\draw[arrow] (chat-v1) -- (mq); % File d'attente pour messages asynchrones
+
+\draw[arrow] (user-v1) -- (polardb); % Bases de données relationnelles
+\draw[arrow] (llm-deepseek-r1) -- (analyticdb); % Pour l'analyse de données de performance ou logs des LLMs
+
+\end{tikzpicture}%
+}
+\caption{Architecture Microservices Parallèle et Répartie sur Alibaba Cloud de Deepseek}
+\label{fig:distributed-parallel-alibaba-cloud-architecture}
 \end{figure}
 
 \end{document}
