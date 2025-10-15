@@ -144,7 +144,7 @@ Fallback must be carefully aligned with the multi-middleware workflow for optima
 
 # 🤖 Intelligent Multimodal Architecture on Alibaba Cloud  
 
-![Parallel Microservices Architecture - AI Layer](images/deepseek-intellignt-architecture.png)
+![Parallel Microservices Architecture - AI Layer](images/deepseek-intelligent-architecture.png)
 
 ### 🧠 Objective
 
